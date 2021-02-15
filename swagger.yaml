@@ -1,0 +1,122 @@
+swagger: "2.0"
+info:
+  description: "Simple API for second Test task"
+  version: "1.0.0"
+  title: "Second test task"
+host: "rwy1afscme.execute-api.us-east-2.amazonaws.com"
+basePath: "/production"
+schemes:
+- "https"
+paths:
+  /jobs:
+    post:
+      summary: "Starts jobs for array of links"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Pet object that needs to be added to the store"
+        required: true
+        schema:
+          $ref: "#/definitions/jobPost"
+      responses:
+        "200":
+          description: "successfuly started jobs"
+          schema:
+            $ref: "#/definitions/jobPostResp"
+    get:
+      summary: "Returns list of all jobs"
+      responses:
+        "200":
+          description: "list of all jobs"
+          schema:
+            type: "object"
+            properties:
+              jobs:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Job"
+  /jobs/{job_id}:
+    get:
+      summary: "Returns info about job with specified id"
+      parameters:
+      - name: "job_id"
+        in: "path"
+        description: "ID of job to return"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Info about specified job"
+          schema:
+            $ref: "#/definitions/Job"
+  /websites:
+    get:
+      summary: "Returns info about all websites, loadtime was tried to calculate"
+      responses:
+        "200":
+          description: "Info about websites"
+          schema:
+            type: "object"
+            properties:
+              websites:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Job"
+  /websites/last:
+    get:
+      summary: "Returns info about last job calculated website with specified domain"
+      parameters:
+      - name: "domain"
+        in: "query"
+        description: "Specified domain"
+        type: "string"
+      responses:
+        "200":
+          description: "Info about specified job website"
+          schema:
+            $ref: "#/definitions/Job"
+definitions:
+  jobPost:
+    type: "object"
+    properties:
+      links:
+        type: "array"
+        items:
+          type: "string"
+      callback:
+        type: "string"
+  jobPostResp:
+    type: "object"
+    properties:
+      idList:
+        type: "array"
+        items:
+          type: "string"
+  Job:
+    type: "object"
+    properties:
+      job_id:
+        type: "string"
+      link:
+        type: "string"
+      linkType:
+        type: "string"
+        enum:
+        - "Website"
+        - "Twitter"
+        - "RSS"
+      state:
+        type: "string"
+        enum:
+        - "Success"
+        - "Processing"
+        - "Error"
+      result:
+        type: "object"
+      callback:
+        type: "string"
+        description: "Callback url for requested link"
+      timestamp:
+        type: "integer"
+        format: "int64"
+        description: "UNIX timestamp format of time when job was started"
