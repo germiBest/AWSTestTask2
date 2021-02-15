@@ -23,8 +23,7 @@ def lambda_handler(event, context):
         links = list(event["links"])
     except TypeError as e:
         return {
-            'statusCode': 500,
-            'body': e,
+            'Error': "Links is not provided"
         }
     
     if "callback" in event:
@@ -62,7 +61,4 @@ def lambda_handler(event, context):
         table.put_item(Item=item)
         resp.append(jobId)
 
-    return {
-        'statusCode': 200,
-        'body': resp,
-    }
+    return {"idList": resp}

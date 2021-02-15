@@ -13,7 +13,4 @@ def lambda_handler(event, context):
         if item["linkType"] == "Website" and event["domain"] in item["link"] and item["timestamp"] > temp_tstmp:
             temp_tstmp = item["timestamp"]
             answ = item
-    return {
-        'statusCode': 200,
-        'body': answ
-    }
+    return answ
