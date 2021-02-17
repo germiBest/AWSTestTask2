@@ -3,7 +3,7 @@ info:
   description: "Simple API for second Test task"
   version: "1.0.0"
   title: "Second test task"
-host: "mpjtycbvua.execute-api.us-east-1.amazonaws.com"
+host: "6xarre2keg.execute-api.us-east-1.amazonaws.com"
 basePath: "/dev"
 schemes:
 - "https"

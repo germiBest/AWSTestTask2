@@ -1,4 +1,4 @@
-service: serverless-rest-api-with-dynamodb
+service: serverless-second-test
 
 frameworkVersion: ">=1"
 
