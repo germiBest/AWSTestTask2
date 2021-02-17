@@ -2,10 +2,10 @@ import time
 import requests
 import json
 import boto3
-
+import os
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Test2API')
+table = dynamodb.Table(os.environ["DYNAMODB_TABLE"])
 
 def result_processing(message, context):
     if "Error" in message:
@@ -17,17 +17,19 @@ def result_processing(message, context):
         
     table.update_item(
         Key={
-            'job_id': message["JobId"],
-            'timestamp': message["timestamp"]
+            'job_id': message["JobId"]
+            #'timestamp': message["timestamp"]
         },
-        UpdateExpression='SET #stte = :val1, #rslt = :result',
+        UpdateExpression='SET #stte = :val1, #rslt = :result, #tmstmp = :tmstmp',
         ExpressionAttributeValues={
             ':val1': stte,
-            ':result': str(res)
+            ':result': str(res),
+            ':tmstmp': int(message["timestamp"])
         },
         ExpressionAttributeNames={
           "#stte": "state",
-          "#rslt": "result"
+          "#rslt": "result",
+          "#tmstmp": "timestamp"
         }
     )
     data = {}

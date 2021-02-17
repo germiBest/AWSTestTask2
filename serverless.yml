@@ -1,0 +1,160 @@
+service: serverless-rest-api-with-dynamodb
+
+frameworkVersion: ">=1"
+
+plugins:
+  - serverless-step-functions
+
+provider:
+  name: aws
+  runtime: python3.8
+  profile: default
+  stage: dev
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}-jobs
+    STATE_MACHINE:
+      Fn::Join:
+              - ''
+              - - 'arn:aws:states:${opt:region, self:provider.region}:'
+                - Ref: 'AWS::AccountId'
+                - ':stateMachine:testTask2_StateMachine'
+    bearerToken: ""
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+    - Effect: Allow
+      Action:
+        - states:StartExecution
+      Resource: "*"
+stepFunctions:
+  stateMachines:
+    testTask2:
+      name: testTask2_StateMachine
+      definition:
+        StartAt: ProcessLink
+        States:
+          ProcessLink:
+            Type: Choice
+            Choices:
+            - Variable: "$.LinkType"
+              StringEquals: "Twitter"
+              Next: ProcessTwitter
+            - Variable: "$.LinkType"
+              StringEquals: "RSS"
+              Next: ProcessRSS
+            - Variable: "$.LinkType"
+              StringEquals: "Website"
+              Next: ProcessWebsite
+          ProcessTwitter:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [processTwitter,Arn]
+            Next: Webhook
+          ProcessRSS:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [processRss,Arn]
+            Next: Webhook
+          ProcessWebsite:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [processWebsite,Arn]
+            Next: Webhook
+          Webhook:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [resultProcessing,Arn]
+            End: true
+
+
+functions:
+  processLink:
+    handler: lambda/process_link.lambda_handler
+    events: # All events associated with this function
+      - http:
+          path: jobs
+          method: post
+          integration: lambda
+          request:
+            template: 
+              application/json: $input.json("$")
+    timeout: 30
+  latestWebsite:
+    handler: lambda/latest_website.lambda_handler
+    events:
+      - http:
+          path: websites/last
+          method: get
+          integration: lambda
+          request:
+            template:
+              application/json: '{"domain": "$input.params("domain")"}'
+  jobsList:
+    handler: lambda/jobs_list.lambda_handler
+    events:
+      - http:
+          path: jobs
+          method: get
+          integration: lambda
+  jobSearchId:
+    handler: lambda/job_byId.lambda_handler
+    events:
+      - http:
+          path: jobs/{job_id}
+          method: get
+          integration: lambda
+          request:
+            template:
+              application/json: '{"job_id": "$input.params("job_id")"}'
+  websitesList:
+    handler: lambda/websites_list.lambda_handler
+    events:
+      - http:
+          path: websites
+          method: get
+          integration: lambda
+  processWebsite:
+    handler: lambda/process_website.process_website
+    timeout: 60
+  processRss:
+    handler: lambda/process_rss.process_rss
+    timeout: 15
+  processTwitter:
+    handler: lambda/process_twitter.process_twitter
+    timeout: 15
+  resultProcessing:
+    handler: lambda/result_processing.result_processing
+
+custom:
+  apiGatewayServiceProxies:
+    - dynamodb:
+        path: jobs/{job_id}
+        method: get
+        tableName: { Ref: 'Task2DynamoDbTable' }
+        hashKey:
+          queryStringParam: job_id # use query string parameter
+          attributeType: S
+        action: GetItem
+
+resources:
+  Resources:
+    Task2DynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: job_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: job_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}

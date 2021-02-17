@@ -18,3 +18,4 @@ def process_rss(message, context):
     except BaseException as e:
         response["Error"] = e
     return response
+

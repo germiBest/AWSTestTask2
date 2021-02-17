@@ -3,25 +3,32 @@ import boto3
 import uuid
 import json
 from datetime import datetime
+import os
+import feedparser
+import socket
 
 client = boto3.client('stepfunctions')
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Test2API')
+table = dynamodb.Table(os.environ["DYNAMODB_TABLE"])
+socket.setdefaulttimeout(1)
+
 
 def link_processing(url):
     link = urlparse(url)
-    if link.hostname in ("twitter.com", "twttr.com"):
-        return("Twitter")
-    elif link.path[-4:] in (".xml", ".rss"):
-        return("RSS")
-    else:
-        return("Website")
+    try:
+        if link.hostname in ("twitter.com", "twttr.com"):
+            return("Twitter")
+        elif len(feedparser.parse(url).entries) != 0:
+            return("RSS")
+        else:
+            return("Website")
+    except socket.timeout:
+        return ("Website")
 
 def lambda_handler(event, context):
-    # INPUT -> { "JobId": "uuid", "Callback": "url", "Link": "url"}
     try:
         links = list(event["links"])
-    except TypeError as e:
+    except TypeError:
         return {
             'Error': "Links is not provided"
         }
@@ -45,7 +52,7 @@ def lambda_handler(event, context):
         input["LinkType"] = link_processing(link)
         input["timestamp"] = int(datetime.now().timestamp())
         client.start_execution(
-            stateMachineArn='arn:aws:states:us-east-2:938668680897:stateMachine:Test2API_StateMachine',
+            stateMachineArn=os.environ["STATE_MACHINE"],
             name=jobId,
             input=json.dumps(input)
         )
@@ -56,9 +63,12 @@ def lambda_handler(event, context):
                     'state': 'Processing',
                     'linkType': input["LinkType"]
                 }
-        if 'callback' in locals():
+        try:
             item['callback'] = callback
+        except KeyError:
+            pass
         table.put_item(Item=item)
         resp.append(jobId)
 
     return {"idList": resp}
+
