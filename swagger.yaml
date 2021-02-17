@@ -3,8 +3,8 @@ info:
   description: "Simple API for second Test task"
   version: "1.0.0"
   title: "Second test task"
-host: "rwy1afscme.execute-api.us-east-2.amazonaws.com"
-basePath: "/production"
+host: "mpjtycbvua.execute-api.us-east-1.amazonaws.com"
+basePath: "/dev"
 schemes:
 - "https"
 paths:
