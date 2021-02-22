@@ -7,6 +7,7 @@ Localy install python dependencies (in case serverless-python-requirements doesn
 ```shell
 pip install -r requirements.txt -t .
 serverless plugin install --name serverless-step-functions
+serverless plugin install --name serverless-pseudo-parameters
 ```
 
 ```shell

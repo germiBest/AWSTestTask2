@@ -4,6 +4,7 @@ frameworkVersion: ">=1"
 
 plugins:
   - serverless-step-functions
+  - serverless-pseudo-parameters
 
 provider:
   name: aws
@@ -12,12 +13,7 @@ provider:
   stage: dev
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}-jobs
-    STATE_MACHINE:
-      Fn::Join:
-              - ''
-              - - 'arn:aws:states:${opt:region, self:provider.region}:'
-                - Ref: 'AWS::AccountId'
-                - ':stateMachine:testTask2_StateMachine'
+    STATE_MACHINE: arn:aws:states:${opt:region, self:provider.region}:#{AWS::AccountId}:stateMachine:testTask2_StateMachine
     bearerToken: ""
   iamRoleStatements:
     - Effect: Allow
